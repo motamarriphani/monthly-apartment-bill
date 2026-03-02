@@ -2,6 +2,12 @@
 
 Simple offline Android app for calculating apartment water bills month-by-month.
 
+## Live Links
+
+- Web app (GitHub Pages): https://motamarriphani.github.io/monthly-apartment-bill/
+- APK download (Expo build): https://expo.dev/artifacts/eas/qhHsAFXAqvbCfZqwcCeuoK.apk
+- Build reference: `eea19937b7fdbb0f5c30a1ddaf22af2df7616e31`
+
 ## Features
 
 - Tankers, tanker price, current bill, maintenance, flats, and flat minutes inputs
