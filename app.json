@@ -27,6 +27,9 @@
       }
     },
     "owner": "phani2930",
+    "experiments": {
+      "baseUrl": "/monthly-apartment-bill"
+    },
     "plugins": [
       "@react-native-community/datetimepicker"
     ],

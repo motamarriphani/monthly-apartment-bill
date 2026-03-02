@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import * as FileSystem from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -478,39 +477,15 @@ const App = () => {
         return;
       }
 
-      let saved = false;
-
-      // Primary path: base64 capture -> png file -> gallery save
-      try {
-        const base64Image = await billShotRef.current?.capture?.({
-          format: "png",
-          quality: 1,
-          result: "base64"
-        });
-        if (base64Image) {
-          const fileUri = `${FileSystem.cacheDirectory}water-bill-${Date.now()}.png`;
-          await FileSystem.writeAsStringAsync(fileUri, base64Image, {
-            encoding: FileSystem.EncodingType.Base64
-          });
-          await MediaLibrary.saveToLibraryAsync(fileUri);
-          saved = true;
-        }
-      } catch (base64Error) {
-        // Fallback path below.
+      const tmpFileUri = await billShotRef.current?.capture?.({
+        format: "png",
+        quality: 1,
+        result: "tmpfile"
+      });
+      if (!tmpFileUri) {
+        throw new Error("capture returned empty file");
       }
-
-      // Fallback path: tmpfile capture directly to gallery
-      if (!saved) {
-        const tmpFileUri = await billShotRef.current?.capture?.({
-          format: "png",
-          quality: 1,
-          result: "tmpfile"
-        });
-        if (!tmpFileUri) {
-          throw new Error("capture returned empty file");
-        }
-        await MediaLibrary.saveToLibraryAsync(tmpFileUri);
-      }
+      await MediaLibrary.saveToLibraryAsync(tmpFileUri);
 
       Alert.alert("Done", "Bill image downloaded to gallery.");
     } catch (error) {
