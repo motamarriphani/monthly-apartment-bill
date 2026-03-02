@@ -320,7 +320,7 @@ const App = () => {
 
   const downloadBillImage = async () => {
     try {
-      if (typeof window !== "undefined") {
+      if (Platform.OS === "web") {
         const rowCount = computed.activeRows.length;
         const width = 1240;
         const topAreaHeight = 350;
