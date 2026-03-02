@@ -8,8 +8,22 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "androidNavigationBar": {
+      "backgroundColor": "#eef2f7",
+      "barStyle": "dark-content"
+    },
     "android": {
-      "package": "com.motam.apartmentwaterbill"
-    }
+      "package": "com.motam.apartmentwaterbill",
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "85138c93-7e60-4572-8a14-b40deb246675"
+      }
+    },
+    "owner": "phani2930",
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

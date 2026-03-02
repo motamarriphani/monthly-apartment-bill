@@ -1,8 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import * as FileSystem from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -12,10 +16,25 @@ import {
   TextInput,
   View
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import ViewShot from "react-native-view-shot";
 
 const STORAGE_KEY = "water_bill_v1";
 const DEFAULT_FLAT_NUMBERS = ["G5", "G6", "G7", "105", "106", "107", "205", "206", "207"];
+const MONTH_OPTIONS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December"
+];
 
 const createFlat = (flatNumber) => ({
   id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -38,6 +57,9 @@ const roundRupee = (value) => Math.round(Number.isFinite(value) ? value : 0);
 const formatPerMinute = (value) =>
   Number.isFinite(value) ? value.toFixed(3) : "0.000";
 const createDefaultFlats = () => DEFAULT_FLAT_NUMBERS.map((flatNumber) => createFlat(flatNumber));
+const getCurrentMonth = () => MONTH_OPTIONS[new Date().getMonth()];
+const formatDateLabel = (date) =>
+  `${date.getDate()} ${MONTH_OPTIONS[date.getMonth()].slice(0, 3)} ${date.getFullYear()}`;
 
 const normalizeSavedFlats = (savedFlats) => {
   if (!Array.isArray(savedFlats)) return createDefaultFlats();
@@ -67,7 +89,7 @@ const normalizeSavedFlats = (savedFlats) => {
 };
 
 const App = () => {
-  const [monthLabel, setMonthLabel] = useState("");
+  const [monthLabel, setMonthLabel] = useState(getCurrentMonth());
   const [maintainedByFlat, setMaintainedByFlat] = useState("");
   const [finalPaymentDate, setFinalPaymentDate] = useState("");
   const [payTo, setPayTo] = useState("");
@@ -78,6 +100,7 @@ const App = () => {
   const [maintenanceMode, setMaintenanceMode] = useState("global");
   const [flats, setFlats] = useState(createDefaultFlats());
   const [isHydrated, setIsHydrated] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const saveTimeoutRef = useRef(null);
   const billShotRef = useRef(null);
@@ -256,9 +279,15 @@ const App = () => {
     setFlats(createDefaultFlats());
   };
 
+  const onDueDateChange = (_, selectedDate) => {
+    setShowDatePicker(false);
+    if (!selectedDate) return;
+    setFinalPaymentDate(formatDateLabel(selectedDate));
+  };
+
   const resetMonth = async () => {
     const reset = createDefaultFlats();
-    setMonthLabel("");
+    setMonthLabel(getCurrentMonth());
     setMaintainedByFlat("");
     setFinalPaymentDate("");
     setPayTo("");
@@ -439,16 +468,31 @@ const App = () => {
         return;
       }
 
-      const uri = await billShotRef.current?.capture?.();
-      if (!uri) {
+      const base64Image = await billShotRef.current?.capture?.({
+        format: "png",
+        quality: 1,
+        result: "base64"
+      });
+      if (!base64Image) {
         Alert.alert("Error", "Could not generate image.");
         return;
       }
 
-      const permission = await MediaLibrary.requestPermissionsAsync();
-      if (permission.status === "granted") {
-        await MediaLibrary.saveToLibraryAsync(uri);
+      const existingPermission = await MediaLibrary.getPermissionsAsync();
+      let finalPermission = existingPermission;
+      if (!existingPermission.granted) {
+        finalPermission = await MediaLibrary.requestPermissionsAsync();
       }
+      if (!finalPermission.granted) {
+        Alert.alert("Permission Required", "Please allow Photos/Media permission to save image.");
+        return;
+      }
+
+      const fileUri = `${FileSystem.cacheDirectory}water-bill-${Date.now()}.png`;
+      await FileSystem.writeAsStringAsync(fileUri, base64Image, {
+        encoding: FileSystem.EncodingType.Base64
+      });
+      await MediaLibrary.saveToLibraryAsync(fileUri);
 
       Alert.alert("Done", "Bill image downloaded to gallery.");
     } catch (error) {
@@ -458,9 +502,15 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.safeArea}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 30 : 0}
+      >
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         <Text style={styles.title}>Monthly Water Bill</Text>
         <Text style={styles.subtitle}>Apartment Calculator</Text>
@@ -471,44 +521,60 @@ const App = () => {
             Enter month and bill values. Totals update automatically.
           </Text>
           <Text style={styles.label}>Month</Text>
-          <TextInput
-            value={monthLabel}
-            onChangeText={setMonthLabel}
-            placeholder="ex: March 2026"
-            placeholderTextColor="#64748b"
-            accessibilityLabel="Month"
-            style={styles.input}
-          />
+          <View style={styles.pickerWrap}>
+            <Picker
+              selectedValue={monthLabel}
+              onValueChange={setMonthLabel}
+              accessibilityLabel="Month of maintenance"
+              style={styles.picker}
+            >
+              {MONTH_OPTIONS.map((month) => (
+                <Picker.Item key={month} label={month} value={month} />
+              ))}
+            </Picker>
+          </View>
 
           <Text style={styles.label}>Maintained by flat no.</Text>
-          <TextInput
-            value={maintainedByFlat}
-            onChangeText={setMaintainedByFlat}
-            placeholder="ex: 206"
-            placeholderTextColor="#64748b"
-            accessibilityLabel="Maintained by flat number"
-            style={styles.input}
-          />
+          <View style={styles.pickerWrap}>
+            <Picker
+              selectedValue={maintainedByFlat}
+              onValueChange={setMaintainedByFlat}
+              accessibilityLabel="Maintained by flat number"
+              style={styles.picker}
+            >
+              <Picker.Item label="Select flat" value="" />
+              {DEFAULT_FLAT_NUMBERS.map((flatNo) => (
+                <Picker.Item key={`maint-${flatNo}`} label={flatNo} value={flatNo} />
+              ))}
+            </Picker>
+          </View>
 
           <Text style={styles.label}>Final payment date</Text>
-          <TextInput
-            value={finalPaymentDate}
-            onChangeText={setFinalPaymentDate}
-            placeholder="ex: 10 Apr 2026"
-            placeholderTextColor="#64748b"
-            accessibilityLabel="Final payment date"
-            style={styles.input}
-          />
+          <Pressable
+            style={styles.dateButton}
+            onPress={() => setShowDatePicker(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Select final payment date"
+          >
+            <Text style={styles.dateButtonText}>
+              {finalPaymentDate || "Select date"}
+            </Text>
+          </Pressable>
 
           <Text style={styles.label}>Pay to</Text>
-          <TextInput
-            value={payTo}
-            onChangeText={setPayTo}
-            placeholder="ex: RKN / Apartment Account"
-            placeholderTextColor="#64748b"
-            accessibilityLabel="Pay to"
-            style={styles.input}
-          />
+          <View style={styles.pickerWrap}>
+            <Picker
+              selectedValue={payTo}
+              onValueChange={setPayTo}
+              accessibilityLabel="Pay to flat number"
+              style={styles.picker}
+            >
+              <Picker.Item label="Select flat" value="" />
+              {DEFAULT_FLAT_NUMBERS.map((flatNo) => (
+                <Picker.Item key={`pay-${flatNo}`} label={flatNo} value={flatNo} />
+              ))}
+            </Picker>
+          </View>
 
           <Text style={styles.label}>Number of tankers</Text>
           <TextInput
@@ -821,6 +887,15 @@ const App = () => {
           <Text style={styles.resetText}>Reset Month</Text>
         </Pressable>
       </ScrollView>
+      {showDatePicker ? (
+        <DateTimePicker
+          value={new Date()}
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={onDueDateChange}
+        />
+      ) : null}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -836,7 +911,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingHorizontal: 18,
     paddingVertical: 18,
-    paddingBottom: 32
+    paddingBottom: 92
   },
   title: {
     fontSize: 36,
@@ -887,6 +962,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     backgroundColor: "#ffffff",
     marginBottom: 14,
+    fontSize: 20,
+    color: "#0f172a"
+  },
+  pickerWrap: {
+    borderWidth: 1.5,
+    borderColor: "#cbd5e1",
+    borderRadius: 10,
+    backgroundColor: "#ffffff",
+    marginBottom: 14,
+    overflow: "hidden"
+  },
+  picker: {
+    height: 56,
+    color: "#0f172a"
+  },
+  dateButton: {
+    minHeight: 56,
+    borderWidth: 1.5,
+    borderColor: "#cbd5e1",
+    borderRadius: 10,
+    backgroundColor: "#ffffff",
+    marginBottom: 14,
+    justifyContent: "center",
+    paddingHorizontal: 14
+  },
+  dateButtonText: {
     fontSize: 20,
     color: "#0f172a"
   },
