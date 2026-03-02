@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import Constants from "expo-constants";
 import * as MediaLibrary from "expo-media-library";
+import * as Updates from "expo-updates";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -59,6 +61,12 @@ const createDefaultFlats = () => DEFAULT_FLAT_NUMBERS.map((flatNumber) => create
 const getCurrentMonth = () => MONTH_OPTIONS[new Date().getMonth()];
 const formatDateLabel = (date) =>
   `${date.getDate()} ${MONTH_OPTIONS[date.getMonth()].slice(0, 3)} ${date.getFullYear()}`;
+const formatTimestamp = (value) => {
+  if (!value) return "-";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString();
+};
 
 const normalizeSavedFlats = (savedFlats) => {
   if (!Array.isArray(savedFlats)) return createDefaultFlats();
@@ -100,6 +108,9 @@ const App = () => {
   const [flats, setFlats] = useState(createDefaultFlats());
   const [isHydrated, setIsHydrated] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState("Not checked yet");
+  const [lastUpdateCheck, setLastUpdateCheck] = useState("");
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
 
   const saveTimeoutRef = useRef(null);
   const billShotRef = useRef(null);
@@ -261,6 +272,18 @@ const App = () => {
     flats,
     maintenanceMode
   ]);
+
+  const buildInfo = useMemo(
+    () => ({
+      appVersion: Constants.expoConfig?.version || "-",
+      runtimeVersion: Updates.runtimeVersion || "-",
+      updateId: Updates.updateId || "embedded",
+      channel: Updates.channel || "not set",
+      launchType: Updates.isEmbeddedLaunch ? "Embedded bundle" : "EAS update",
+      launchedAt: formatTimestamp(Updates.createdAt)
+    }),
+    []
+  );
 
   const handleFlatChange = (id, key, value) => {
     setFlats((current) =>
@@ -490,6 +513,54 @@ const App = () => {
       Alert.alert("Done", "Bill image downloaded to gallery.");
     } catch (error) {
       Alert.alert("Error", `Failed to download image. ${error?.message || ""}`);
+    }
+  };
+
+  const checkForUpdatesNow = async () => {
+    if (Platform.OS === "web") {
+      setUpdateStatus("Web build: EAS OTA updates are for native app builds.");
+      setLastUpdateCheck(formatTimestamp(new Date()));
+      return;
+    }
+    if (__DEV__) {
+      setUpdateStatus("Dev mode: OTA checks are disabled. Use a preview/production build.");
+      setLastUpdateCheck(formatTimestamp(new Date()));
+      return;
+    }
+
+    setIsCheckingUpdate(true);
+    try {
+      setUpdateStatus("Checking for updates...");
+      const result = await Updates.checkForUpdateAsync();
+      if (!result.isAvailable) {
+        setUpdateStatus("No update available.");
+        return;
+      }
+
+      await Updates.fetchUpdateAsync();
+      setUpdateStatus("Update downloaded. Tap 'Reload App' to apply.");
+    } catch (error) {
+      setUpdateStatus(`Check failed: ${error?.message || "Unknown error"}`);
+    } finally {
+      setLastUpdateCheck(formatTimestamp(new Date()));
+      setIsCheckingUpdate(false);
+    }
+  };
+
+  const reloadAppNow = async () => {
+    if (Platform.OS === "web") {
+      Alert.alert("Web", "Use normal browser refresh on web.");
+      return;
+    }
+    if (__DEV__) {
+      Alert.alert("Dev mode", "Reload using Expo dev controls.");
+      return;
+    }
+
+    try {
+      await Updates.reloadAsync();
+    } catch (error) {
+      Alert.alert("Reload failed", error?.message || "Could not reload app.");
     }
   };
 
@@ -730,6 +801,47 @@ const App = () => {
           <Text style={styles.summaryLine}>
             Pay To: {payTo.trim() || "-"}
           </Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle} accessibilityRole="header">Build & Update Info</Text>
+          <Text style={styles.cardDescription}>
+            Use this to confirm exactly which app version/update is running.
+          </Text>
+          <Text style={styles.infoLine}>App Version: {buildInfo.appVersion}</Text>
+          <Text style={styles.infoLine}>Runtime Version: {buildInfo.runtimeVersion}</Text>
+          <Text style={styles.infoLine}>Channel: {buildInfo.channel}</Text>
+          <Text style={styles.infoLine}>Launch Type: {buildInfo.launchType}</Text>
+          <Text style={styles.infoLine} selectable>
+            Update ID: {buildInfo.updateId}
+          </Text>
+          <Text style={styles.infoLine}>Launched At: {buildInfo.launchedAt}</Text>
+          <Text style={styles.infoLine}>Update Status: {updateStatus}</Text>
+          <Text style={styles.infoLine}>Last Checked: {lastUpdateCheck || "-"}</Text>
+
+          <View style={styles.buttonRow}>
+            <Pressable
+              style={[styles.buttonPrimary, isCheckingUpdate && styles.buttonDisabled]}
+              onPress={checkForUpdatesNow}
+              accessibilityRole="button"
+              accessibilityLabel="Check for app updates now"
+              disabled={isCheckingUpdate}
+            >
+              <Text style={styles.buttonText}>
+                {isCheckingUpdate ? "Checking..." : "Check Update Now"}
+              </Text>
+            </Pressable>
+          </View>
+          <View style={[styles.buttonRow, styles.secondaryButtonRow]}>
+            <Pressable
+              style={styles.buttonSecondary}
+              onPress={reloadAppNow}
+              accessibilityRole="button"
+              accessibilityLabel="Reload app to apply update"
+            >
+              <Text style={styles.buttonSecondaryText}>Reload App</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.card}>
@@ -1073,10 +1185,35 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: "700"
   },
+  buttonDisabled: {
+    opacity: 0.7
+  },
+  buttonSecondary: {
+    flex: 1,
+    backgroundColor: "#334155",
+    borderRadius: 12,
+    minHeight: 52,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12
+  },
+  buttonSecondaryText: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "700"
+  },
+  secondaryButtonRow: {
+    marginTop: 10
+  },
   summaryLine: {
     fontSize: 19,
     color: "#0f172a",
     marginBottom: 8
+  },
+  infoLine: {
+    fontSize: 16,
+    color: "#0f172a",
+    marginBottom: 6
   },
   tableHeader: {
     flexDirection: "row",
