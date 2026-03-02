@@ -796,68 +796,90 @@ const App = () => {
             options={{ format: "png", quality: 1, result: "tmpfile" }}
             style={styles.billShot}
           >
-            <Text style={styles.billTitle}>WATER BILL</Text>
-            <Text style={styles.billMeta}>Month: {monthLabel.trim() || "-"}</Text>
-            <Text style={styles.billMeta}>
-              Tankers: {toNumber(tankers)} x Rs {toNumber(pricePerTanker)}
-            </Text>
-            <Text style={styles.billMeta}>
-              Current Bill: Rs {roundRupee(toNumber(currentWaterBill))}
-            </Text>
-            <Text style={styles.billMeta}>
-              Total Water Cost: Rs {roundRupee(computed.totalWaterCost)}
-            </Text>
-            <Text style={styles.billMeta}>Total Minutes: {computed.totalMinutes}</Text>
-            <Text style={styles.billMeta}>
-              Per Minute: Rs {formatPerMinute(computed.perMinuteCost)}
-            </Text>
+            <Text style={styles.billTitle}>MONTHLY WATER BILL</Text>
+            <Text style={styles.billMetaLarge}>Month: {monthLabel.trim() || "-"}</Text>
+
+            <View style={styles.billSummaryRow}>
+              <View style={styles.billSummaryCard}>
+                <Text style={styles.billSummaryTitle}>Water Cost</Text>
+                <Text style={styles.billMetaLine}>Tankers: {toNumber(tankers)}</Text>
+                <Text style={styles.billMetaLine}>
+                  Price/Tanker: Rs {toNumber(pricePerTanker)}
+                </Text>
+                <Text style={styles.billMetaLine}>
+                  Current Bill: Rs {roundRupee(toNumber(currentWaterBill))}
+                </Text>
+                <Text style={styles.billMetaLine}>
+                  Total Water Cost: Rs {roundRupee(computed.totalWaterCost)}
+                </Text>
+              </View>
+              <View style={styles.billSummaryCard}>
+                <Text style={styles.billSummaryTitle}>Usage Summary</Text>
+                <Text style={styles.billMetaLine}>Total Minutes: {computed.totalMinutes}</Text>
+                <Text style={styles.billMetaLine}>
+                  Per Minute: Rs {formatPerMinute(computed.perMinuteCost)}
+                </Text>
+                <Text style={styles.billMetaLine}>
+                  Active Flats: {computed.activeFlatsCount}
+                </Text>
+                <Text style={styles.billMetaLine}>
+                  Maintained By: Flat {maintainedByFlat.trim() || "-"}
+                </Text>
+              </View>
+            </View>
 
             <View style={styles.billHeaderRow}>
-              <Text style={[styles.billHeadCell, styles.colFlat]}>Flat</Text>
-              <Text style={[styles.billHeadCell, styles.colMinutes]}>Min</Text>
-              <Text style={[styles.billHeadCell, styles.colMoney]}>Water</Text>
-              <Text style={[styles.billHeadCell, styles.colMoney]}>Maint</Text>
-              <Text style={[styles.billHeadCell, styles.colMoney]}>Total</Text>
+              <Text style={[styles.billHeadCell, styles.billColFlat]}>Flat No</Text>
+              <Text style={[styles.billHeadCell, styles.billColMin]}>Minutes</Text>
+              <Text style={[styles.billHeadCell, styles.billColMoney]}>Water Amt</Text>
+              <Text style={[styles.billHeadCell, styles.billColMoney]}>Maint</Text>
+              <Text style={[styles.billHeadCell, styles.billColMoney]}>Total</Text>
             </View>
-            {computed.activeRows.map((row) => (
-              <View key={`bill-${row.id}`} style={styles.billRow}>
-                <Text style={[styles.billCell, styles.colFlat]}>{row.flatNumber}</Text>
-                <Text style={[styles.billCell, styles.colMinutes]}>{row.minutes}</Text>
-                <Text style={[styles.billCell, styles.colMoney]}>
+            {computed.activeRows.map((row, index) => (
+              <View
+                key={`bill-${row.id}`}
+                style={[styles.billRow, index % 2 === 1 && styles.billRowStriped]}
+              >
+                <Text style={[styles.billCell, styles.billColFlat]}>{row.flatNumber}</Text>
+                <Text style={[styles.billCell, styles.billColMin]}>{row.minutes}</Text>
+                <Text style={[styles.billCell, styles.billColMoney]}>
                   {roundRupee(row.waterAmount)}
                 </Text>
-                <Text style={[styles.billCell, styles.colMoney]}>
+                <Text style={[styles.billCell, styles.billColMoney]}>
                   {roundRupee(row.maintenanceAmount)}
                 </Text>
-                <Text style={[styles.billCell, styles.colMoney]}>
+                <Text style={[styles.billCell, styles.billColMoney]}>
                   {roundRupee(row.total)}
                 </Text>
               </View>
             ))}
 
             <View style={styles.billTotalRow}>
-              <Text style={[styles.billCell, styles.colFlat]}>Grand Total</Text>
-              <Text style={[styles.billCell, styles.colMinutes]}>
+              <Text style={[styles.billTotalCell, styles.billColFlat]}>Grand Total</Text>
+              <Text style={[styles.billTotalCell, styles.billColMin]}>
                 {computed.totalMinutes}
               </Text>
-              <Text style={[styles.billCell, styles.colMoney]}>
+              <Text style={[styles.billTotalCell, styles.billColMoney]}>
                 {roundRupee(computed.totalWaterCost)}
               </Text>
-              <Text style={[styles.billCell, styles.colMoney]}>
+              <Text style={[styles.billTotalCell, styles.billColMoney]}>
                 {roundRupee(computed.totalMaintenance)}
               </Text>
-              <Text style={[styles.billCell, styles.colMoney]}>
+              <Text style={[styles.billTotalCell, styles.billColMoney]}>
                 {roundRupee(computed.grandTotal)}
               </Text>
             </View>
-            <Text style={styles.billMaintainer}>
-              Maintained by Flat {maintainedByFlat.trim() || "-"}
-            </Text>
-            <Text style={styles.billFooterLine}>
-              Final Payment Date: {finalPaymentDate.trim() || "-"}
-            </Text>
-            <Text style={styles.billFooterLine}>
-              Pay To: {payTo.trim() || "-"}
+
+            <View style={styles.billFooterMetaRow}>
+              <Text style={styles.billFooterLine}>
+                Final Payment Date: {finalPaymentDate.trim() || "-"}
+              </Text>
+              <Text style={styles.billFooterLine}>
+                Pay To: {payTo.trim() || "-"}
+              </Text>
+            </View>
+            <Text style={styles.billGeneratedNote}>
+              Generated from Monthly Apartment Bill app
             </Text>
           </ViewShot>
 
@@ -1109,62 +1131,111 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "#d1d5db",
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 14,
+    padding: 16,
     marginBottom: 12
   },
   billTitle: {
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: "800",
     color: "#0f172a",
-    textAlign: "center",
-    marginBottom: 8
+    textAlign: "left",
+    marginBottom: 6
   },
-  billMeta: {
-    fontSize: 13,
-    color: "#111827",
+  billMetaLarge: {
+    fontSize: 12,
+    color: "#475569",
+    marginBottom: 12
+  },
+  billSummaryRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 12
+  },
+  billSummaryCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    backgroundColor: "#f8fafc",
+    borderRadius: 6,
+    padding: 8
+  },
+  billSummaryTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0f172a",
+    marginBottom: 4
+  },
+  billMetaLine: {
+    fontSize: 10,
+    color: "#1e293b",
     marginBottom: 2
   },
   billHeaderRow: {
     flexDirection: "row",
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: "#d1d5db",
-    marginTop: 8,
-    paddingVertical: 4
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    backgroundColor: "#e2e8f0",
+    paddingVertical: 5,
+    paddingHorizontal: 2
   },
   billHeadCell: {
-    fontSize: 11,
+    fontSize: 8.5,
     fontWeight: "700",
     color: "#111827"
   },
+  billColFlat: {
+    flex: 1.25
+  },
+  billColMin: {
+    flex: 1,
+    textAlign: "center"
+  },
+  billColMoney: {
+    flex: 1.05,
+    textAlign: "center"
+  },
   billRow: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-    paddingVertical: 3
+    paddingVertical: 5,
+    paddingHorizontal: 2
+  },
+  billRowStriped: {
+    backgroundColor: "#f8fafc"
   },
   billCell: {
-    fontSize: 11,
+    fontSize: 8.8,
     color: "#111827"
   },
   billTotalRow: {
     flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: "#9ca3af",
-    marginTop: 2,
-    paddingTop: 5
+    borderTopWidth: 1.5,
+    borderColor: "#93c5fd",
+    backgroundColor: "#dbeafe",
+    marginTop: 4,
+    paddingVertical: 7,
+    paddingHorizontal: 2
   },
-  billMaintainer: {
-    fontSize: 12,
-    color: "#111827",
+  billTotalCell: {
+    fontSize: 9.2,
+    fontWeight: "700",
+    color: "#0f172a"
+  },
+  billFooterMetaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 10,
-    textAlign: "right"
+    gap: 10
   },
   billFooterLine: {
-    fontSize: 12,
-    color: "#111827",
-    marginTop: 4
+    fontSize: 9.8,
+    color: "#475569",
+    flex: 1
+  },
+  billGeneratedNote: {
+    fontSize: 9.2,
+    color: "#64748b",
+    marginTop: 6
   },
   resetButton: {
     minHeight: 52,
