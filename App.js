@@ -468,16 +468,6 @@ const App = () => {
         return;
       }
 
-      const base64Image = await billShotRef.current?.capture?.({
-        format: "png",
-        quality: 1,
-        result: "base64"
-      });
-      if (!base64Image) {
-        Alert.alert("Error", "Could not generate image.");
-        return;
-      }
-
       const existingPermission = await MediaLibrary.getPermissionsAsync();
       let finalPermission = existingPermission;
       if (!existingPermission.granted) {
@@ -488,15 +478,43 @@ const App = () => {
         return;
       }
 
-      const fileUri = `${FileSystem.cacheDirectory}water-bill-${Date.now()}.png`;
-      await FileSystem.writeAsStringAsync(fileUri, base64Image, {
-        encoding: FileSystem.EncodingType.Base64
-      });
-      await MediaLibrary.saveToLibraryAsync(fileUri);
+      let saved = false;
+
+      // Primary path: base64 capture -> png file -> gallery save
+      try {
+        const base64Image = await billShotRef.current?.capture?.({
+          format: "png",
+          quality: 1,
+          result: "base64"
+        });
+        if (base64Image) {
+          const fileUri = `${FileSystem.cacheDirectory}water-bill-${Date.now()}.png`;
+          await FileSystem.writeAsStringAsync(fileUri, base64Image, {
+            encoding: FileSystem.EncodingType.Base64
+          });
+          await MediaLibrary.saveToLibraryAsync(fileUri);
+          saved = true;
+        }
+      } catch (base64Error) {
+        // Fallback path below.
+      }
+
+      // Fallback path: tmpfile capture directly to gallery
+      if (!saved) {
+        const tmpFileUri = await billShotRef.current?.capture?.({
+          format: "png",
+          quality: 1,
+          result: "tmpfile"
+        });
+        if (!tmpFileUri) {
+          throw new Error("capture returned empty file");
+        }
+        await MediaLibrary.saveToLibraryAsync(tmpFileUri);
+      }
 
       Alert.alert("Done", "Bill image downloaded to gallery.");
     } catch (error) {
-      Alert.alert("Error", "Failed to download image.");
+      Alert.alert("Error", `Failed to download image. ${error?.message || ""}`);
     }
   };
 
