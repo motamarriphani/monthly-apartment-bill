@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Monthly Apartment Bill V2</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Monthly Apartment Bill</p>
+          <h1>Web V2</h1>
+          <p class="hero-copy">
+            Separate GitHub Pages version for quick edits, mobile testing, and a cleaner
+            browser-first workflow.
+          </p>
+        </div>
+        <div class="hero-links">
+          <a href="../">Open V1</a>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel form-panel">
+          <div class="section-head">
+            <h2>Billing Inputs</h2>
+            <button id="reset-month" class="ghost-button" type="button">Reset</button>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Billing period</span>
+              <select id="billing-period"></select>
+            </label>
+
+            <label class="field">
+              <span>Final payment date</span>
+              <input id="final-payment-date" type="date" />
+            </label>
+
+            <label class="field">
+              <span>Maintained by flat</span>
+              <select id="maintained-by-flat"></select>
+            </label>
+
+            <label class="field">
+              <span>Pay to flat</span>
+              <select id="pay-to-flat"></select>
+            </label>
+
+            <label class="field">
+              <span>Number of tankers</span>
+              <input id="tankers" inputmode="numeric" placeholder="0" />
+            </label>
+
+            <label class="field">
+              <span>Price per tanker (Rs)</span>
+              <input id="price-per-tanker" inputmode="numeric" placeholder="0" />
+            </label>
+
+            <label class="field">
+              <span>Current water bill (Rs)</span>
+              <input id="current-water-bill" inputmode="numeric" placeholder="0" />
+            </label>
+
+            <label class="field">
+              <span>Maintenance mode</span>
+              <select id="maintenance-mode">
+                <option value="global">Same for all flats</option>
+                <option value="perFlat">Per flat</option>
+              </select>
+            </label>
+
+            <label class="field" id="global-maintenance-field">
+              <span>Maintenance per flat (Rs)</span>
+              <input id="global-maintenance" inputmode="numeric" placeholder="0" />
+            </label>
+          </div>
+
+          <div class="flats-section">
+            <div class="section-head">
+              <h2>Flats</h2>
+              <button id="restore-flats" class="ghost-button" type="button">
+                Restore Default Flats
+              </button>
+            </div>
+            <div id="flats-list" class="flat-list"></div>
+          </div>
+        </section>
+
+        <aside class="sidebar">
+          <section class="panel summary-panel">
+            <div class="section-head">
+              <h2>Summary</h2>
+              <button id="download-image" class="primary-button" type="button">
+                Download PNG
+              </button>
+            </div>
+            <div id="summary-grid" class="summary-grid"></div>
+          </section>
+
+          <section class="panel breakdown-panel">
+            <h2>Breakdown</h2>
+            <div id="breakdown-table" class="breakdown-table"></div>
+          </section>
+
+          <section class="panel template-panel">
+            <div class="section-head">
+              <h2>Bill Template</h2>
+              <span class="template-badge">Web V2</span>
+            </div>
+            <div id="bill-template-preview"></div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
