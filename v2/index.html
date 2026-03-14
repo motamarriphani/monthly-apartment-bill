@@ -6,119 +6,142 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <title>Monthly Apartment Bill V2</title>
+    <title>Monthly Apartment Bill</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="page-shell">
-      <header class="hero">
-        <div>
-          <p class="eyebrow">Monthly Apartment Bill</p>
-          <h1>Web V2</h1>
-          <p class="hero-copy">
-            Separate GitHub Pages version for quick edits, mobile testing, and a cleaner
-            browser-first workflow.
+    <main class="page">
+      <section class="container">
+        <h1 class="title">Monthly Water Bill</h1>
+        <p class="subtitle">Apartment Calculator</p>
+
+        <section class="card">
+          <h2 class="card-title">Monthly Inputs</h2>
+          <p class="card-description">
+            Enter month and bill values. Totals update automatically.
           </p>
-        </div>
-        <div class="hero-links">
-          <a href="../">Open V1</a>
-        </div>
-      </header>
 
-      <main class="layout">
-        <section class="panel form-panel">
-          <div class="section-head">
-            <h2>Billing Inputs</h2>
-            <button id="reset-month" class="ghost-button" type="button">Reset</button>
-          </div>
-
-          <div class="field-grid">
-            <label class="field">
-              <span>Billing period</span>
+          <label class="field">
+            <span class="label">Billing period</span>
+            <div class="picker-wrap">
               <select id="billing-period"></select>
-            </label>
-
-            <label class="field">
-              <span>Final payment date</span>
-              <input id="final-payment-date" type="date" />
-            </label>
-
-            <label class="field">
-              <span>Maintained by flat</span>
-              <select id="maintained-by-flat"></select>
-            </label>
-
-            <label class="field">
-              <span>Pay to flat</span>
-              <select id="pay-to-flat"></select>
-            </label>
-
-            <label class="field">
-              <span>Number of tankers</span>
-              <input id="tankers" inputmode="numeric" placeholder="0" />
-            </label>
-
-            <label class="field">
-              <span>Price per tanker (Rs)</span>
-              <input id="price-per-tanker" inputmode="numeric" placeholder="0" />
-            </label>
-
-            <label class="field">
-              <span>Current water bill (Rs)</span>
-              <input id="current-water-bill" inputmode="numeric" placeholder="0" />
-            </label>
-
-            <label class="field">
-              <span>Maintenance mode</span>
-              <select id="maintenance-mode">
-                <option value="global">Same for all flats</option>
-                <option value="perFlat">Per flat</option>
-              </select>
-            </label>
-
-            <label class="field" id="global-maintenance-field">
-              <span>Maintenance per flat (Rs)</span>
-              <input id="global-maintenance" inputmode="numeric" placeholder="0" />
-            </label>
-          </div>
-
-          <div class="flats-section">
-            <div class="section-head">
-              <h2>Flats</h2>
-              <button id="restore-flats" class="ghost-button" type="button">
-                Restore Default Flats
-              </button>
             </div>
-            <div id="flats-list" class="flat-list"></div>
+          </label>
+
+          <label class="field">
+            <span class="label">Maintained by flat no.</span>
+            <div class="picker-wrap">
+              <select id="maintained-by-flat"></select>
+            </div>
+          </label>
+
+          <label class="field">
+            <span class="label">Final payment date</span>
+            <input id="final-payment-date" type="date" class="input" />
+          </label>
+
+          <label class="field">
+            <span class="label">Pay to</span>
+            <div class="picker-wrap">
+              <select id="pay-to-flat"></select>
+            </div>
+          </label>
+
+          <label class="field">
+            <span class="label">Number of tankers</span>
+            <input id="tankers" class="input" inputmode="numeric" placeholder="0" />
+          </label>
+
+          <label class="field">
+            <span class="label">Price per tanker (Rs)</span>
+            <input
+              id="price-per-tanker"
+              class="input"
+              inputmode="numeric"
+              placeholder="0"
+            />
+          </label>
+
+          <label class="field">
+            <span class="label">Current water bill (optional, Rs)</span>
+            <input
+              id="current-water-bill"
+              class="input"
+              inputmode="numeric"
+              placeholder="0"
+            />
+          </label>
+        </section>
+
+        <section class="card">
+          <h2 class="card-title">Maintenance</h2>
+          <p class="card-description">
+            Use one common maintenance amount, or switch to per-flat mode.
+          </p>
+
+          <label class="switch-row">
+            <span class="label no-margin">Per-flat maintenance mode</span>
+            <input id="maintenance-mode-toggle" type="checkbox" />
+          </label>
+
+          <label class="field" id="global-maintenance-field">
+            <span class="label">Maintenance per flat (Rs)</span>
+            <input
+              id="global-maintenance"
+              class="input"
+              inputmode="numeric"
+              placeholder="0"
+            />
+          </label>
+
+          <p id="per-flat-note" class="mode-note" hidden>
+            Enter maintenance amount inside each flat row.
+          </p>
+        </section>
+
+        <section class="card">
+          <h2 class="card-title">Flats</h2>
+          <p class="card-description">
+            Keep flats active when occupied. Inactive flats are excluded from totals.
+          </p>
+          <p id="flats-meta" class="mode-note"></p>
+
+          <div id="flats-list" class="flat-list"></div>
+
+          <div class="button-row">
+            <button id="restore-flats" class="button-primary" type="button">
+              Restore Default Flats
+            </button>
           </div>
         </section>
 
-        <aside class="sidebar">
-          <section class="panel summary-panel">
-            <div class="section-head">
-              <h2>Summary</h2>
-              <button id="download-image" class="primary-button" type="button">
-                Download PNG
-              </button>
-            </div>
-            <div id="summary-grid" class="summary-grid"></div>
-          </section>
+        <section class="card">
+          <h2 class="card-title">Summary</h2>
+          <div id="summary-lines"></div>
+        </section>
 
-          <section class="panel breakdown-panel">
-            <h2>Breakdown</h2>
-            <div id="breakdown-table" class="breakdown-table"></div>
-          </section>
+        <section class="card">
+          <h2 class="card-title">Flat-wise Breakdown</h2>
+          <p class="card-description">Water and maintenance amount per flat.</p>
+          <div id="breakdown-table" class="breakdown-table"></div>
+        </section>
 
-          <section class="panel template-panel">
-            <div class="section-head">
-              <h2>Bill Template</h2>
-              <span class="template-badge">Web V2</span>
-            </div>
-            <div id="bill-template-preview"></div>
-          </section>
-        </aside>
-      </main>
-    </div>
+        <section class="card">
+          <h2 class="card-title">Download Bill Image</h2>
+          <p class="card-description">
+            Generate a PNG image of the bill for sharing in WhatsApp.
+          </p>
+          <div id="bill-template-preview"></div>
+          <button id="download-image" class="button-primary" type="button">
+            Download Image
+          </button>
+        </section>
+
+        <button id="reset-month" class="reset-button" type="button">
+          Reset Month
+        </button>
+      </section>
+    </main>
 
     <script type="module" src="./main.js"></script>
   </body>

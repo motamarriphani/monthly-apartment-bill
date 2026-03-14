@@ -7,6 +7,7 @@ import {
   createInitialFormState,
   formatBillingPeriod,
   formatDateInputValue,
+  formatPerMinute,
   normalizeSavedForm,
   parseBillingPeriod,
   parseDateInputValue,
@@ -28,11 +29,13 @@ const elements = {
   tankers: document.querySelector("#tankers"),
   pricePerTanker: document.querySelector("#price-per-tanker"),
   currentWaterBill: document.querySelector("#current-water-bill"),
-  maintenanceMode: document.querySelector("#maintenance-mode"),
+  maintenanceModeToggle: document.querySelector("#maintenance-mode-toggle"),
   globalMaintenanceField: document.querySelector("#global-maintenance-field"),
+  perFlatNote: document.querySelector("#per-flat-note"),
   globalMaintenance: document.querySelector("#global-maintenance"),
+  flatsMeta: document.querySelector("#flats-meta"),
   flatsList: document.querySelector("#flats-list"),
-  summaryGrid: document.querySelector("#summary-grid"),
+  summaryLines: document.querySelector("#summary-lines"),
   breakdownTable: document.querySelector("#breakdown-table"),
   billTemplatePreview: document.querySelector("#bill-template-preview"),
   resetMonth: document.querySelector("#reset-month"),
@@ -120,40 +123,18 @@ function hydrateSelect(select, options, emptyLabel = "Select flat") {
   });
 }
 
-function renderSummary(computed, templateData) {
-  const cards = [
-    {
-      title: "Billing Period",
-      value: templateData.monthLabel,
-      note: `Maintained by flat ${templateData.maintainedByFlat}`
-    },
-    {
-      title: "Grand Total",
-      value: `Rs ${templateData.grandTotal}`,
-      note: "Water + maintenance"
-    },
-    {
-      title: "Per Minute",
-      value: `Rs ${templateData.perMinuteCost}`,
-      note: `${computed.totalMinutes} total minutes`
-    },
-    {
-      title: "Pay To",
-      value: templateData.payTo,
-      note: `Due: ${templateData.finalPaymentDate}`
-    }
-  ];
-
-  elements.summaryGrid.innerHTML = cards
-    .map(
-      (card) => `
-        <article class="summary-card">
-          <h3>${card.title}</h3>
-          <strong>${card.value}</strong>
-          <p>${card.note}</p>
-        </article>
-      `
-    )
+function renderSummary(values, computed) {
+  const period = formatBillingPeriod(values.monthLabel, values.billYear);
+  elements.summaryLines.innerHTML = [
+    `Month: ${period}`,
+    `Total Water Cost: Rs ${roundRupee(computed.totalWaterCost)}`,
+    `Total Minutes: ${computed.totalMinutes}`,
+    `Per Minute Cost: Rs ${formatPerMinute(computed.perMinuteCost)}`,
+    `Maintained By: Flat ${values.maintainedByFlat.trim() || "-"}`,
+    `Final Payment Date: ${values.finalPaymentDate.trim() || "-"}`,
+    `Pay To: ${values.payTo.trim() || "-"}`
+  ]
+    .map((line) => `<p class="summary-line">${line}</p>`)
     .join("");
 }
 
@@ -172,8 +153,8 @@ function renderBreakdown(computed) {
       <tbody>
         ${computed.perFlat
           .map(
-            (row) => `
-              <tr class="${row.isActive ? "" : "is-inactive"}">
+            (row, index) => `
+              <tr class="${index % 2 === 1 ? "is-striped" : ""} ${row.isActive ? "" : "is-inactive"}">
                 <td>${row.flatNumber}${row.isActive ? "" : " (off)"}</td>
                 <td>${row.minutes}</td>
                 <td>${roundRupee(row.waterAmount)}</td>
@@ -184,11 +165,22 @@ function renderBreakdown(computed) {
           )
           .join("")}
       </tbody>
+      <tfoot>
+        <tr>
+          <td>TOTAL</td>
+          <td>${computed.totalMinutes}</td>
+          <td>${roundRupee(computed.totalWaterCost)}</td>
+          <td>${roundRupee(computed.totalMaintenance)}</td>
+          <td>${roundRupee(computed.grandTotal)}</td>
+        </tr>
+      </tfoot>
     </table>
   `;
 }
 
-function renderFlats(values) {
+function renderFlats(values, computed) {
+  elements.flatsMeta.textContent = `Total rows: ${values.flats.length} | Active: ${computed.activeFlatsCount}`;
+
   elements.flatsList.innerHTML = values.flats
     .map(
       (flat) => `
@@ -196,26 +188,40 @@ function renderFlats(values) {
           <div class="flat-card-head">
             <h3 class="flat-card-title">Flat ${flat.flatNumber}</h3>
             <label class="inline-toggle">
-              <input type="checkbox" data-role="active-toggle" ${flat.isActive ? "checked" : ""} />
               <span>${flat.isActive ? "Active" : "Inactive"}</span>
+              <input type="checkbox" data-role="active-toggle" ${flat.isActive ? "checked" : ""} />
             </label>
           </div>
-          <div class="flat-card-grid">
-            <label class="field">
-              <span>Minutes used</span>
-              <input data-role="minutes" value="${flat.minutes}" inputmode="numeric" placeholder="0" ${flat.isActive ? "" : "disabled"} />
-            </label>
-            ${
-              values.maintenanceMode === "perFlat"
-                ? `
-                  <label class="field">
-                    <span>Maintenance (Rs)</span>
-                    <input data-role="maintenance" value="${flat.maintenance}" inputmode="numeric" placeholder="0" ${flat.isActive ? "" : "disabled"} />
-                  </label>
-                `
-                : ""
-            }
-          </div>
+
+          <label class="field">
+            <span class="label">Minutes used</span>
+            <input
+              class="input"
+              data-role="minutes"
+              value="${flat.minutes}"
+              inputmode="numeric"
+              placeholder="0"
+              ${flat.isActive ? "" : "disabled"}
+            />
+          </label>
+
+          ${
+            values.maintenanceMode === "perFlat"
+              ? `
+                <label class="field">
+                  <span class="label">Maintenance (Rs)</span>
+                  <input
+                    class="input"
+                    data-role="maintenance"
+                    value="${flat.maintenance}"
+                    inputmode="numeric"
+                    placeholder="0"
+                    ${flat.isActive ? "" : "disabled"}
+                  />
+                </label>
+              `
+              : ""
+          }
         </article>
       `
     )
@@ -234,13 +240,14 @@ function render() {
   elements.tankers.value = values.tankers;
   elements.pricePerTanker.value = values.pricePerTanker;
   elements.currentWaterBill.value = values.currentWaterBill;
-  elements.maintenanceMode.value = values.maintenanceMode;
+  elements.maintenanceModeToggle.checked = values.maintenanceMode === "perFlat";
   elements.globalMaintenance.value = values.globalMaintenance;
   elements.globalMaintenanceField.hidden = values.maintenanceMode !== "global";
+  elements.perFlatNote.hidden = values.maintenanceMode !== "perFlat";
 
-  renderSummary(computed, templateData);
+  renderSummary(values, computed);
   renderBreakdown(computed);
-  renderFlats(values);
+  renderFlats(values, computed);
   elements.billTemplatePreview.innerHTML = renderBillTemplate(templateData);
 }
 
@@ -273,8 +280,8 @@ function bindEvents() {
     setField("currentWaterBill", event.target.value);
   });
 
-  elements.maintenanceMode.addEventListener("change", (event) => {
-    setField("maintenanceMode", event.target.value);
+  elements.maintenanceModeToggle.addEventListener("change", (event) => {
+    setField("maintenanceMode", event.target.checked ? "perFlat" : "global");
   });
 
   elements.globalMaintenance.addEventListener("input", (event) => {
