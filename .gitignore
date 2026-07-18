@@ -1,11 +1,7 @@
+expo-legacy/
 node_modules/
-.expo/
-.expo-shared/
 dist/
-web-build/
+dist-v2/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 .DS_Store
 Thumbs.db

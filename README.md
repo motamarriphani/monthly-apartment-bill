@@ -1,67 +1,14 @@
-# Monthly Apartment Bill (Expo Android App)
+# Monthly Apartment Bill — Web Editions
 
-Simple offline Android app for calculating apartment water bills month-by-month.
+This repository contains two browser versions of the Monthly Apartment Bill calculator.
 
-## Live Links
+- **[Web version 1](./web-v1/):** a preserved static snapshot of the original Expo web app.
+- **[Web version 2](./web-v2/):** the current standalone HTML, CSS, and JavaScript app to improve going forward.
 
-- Web app (GitHub Pages): https://motamarriphani.github.io/monthly-apartment-bill/
-- APK download (Expo build): https://expo.dev/artifacts/eas/oQ21iSVoht4zsgmi649cU6.apk
-- Build reference: `eea19937b7fdbb0f5c30a1ddaf22af2df7616e31`
+Open `index.html` locally to choose a version, or publish the repository with GitHub Pages. Both versions store their values only in the browser and can download a PNG bill image.
 
-## Features
+## Development
 
-- Tankers, tanker price, current bill, maintenance, flats, and flat minutes inputs
-- Add/Remove flat rows
-- Auto recalculation on every input change
-- Money values rounded to nearest rupee
-- Flat-wise breakdown table
-- Offline persistence using AsyncStorage
-- Android-first setup with EAS APK build profile
+Web version 1 is a legacy snapshot and needs no build step. Web version 2 is also static: serve the repository with any static web server and open `web-v2/`.
 
-## Install and Run
-
-```bash
-npm install
-npx expo start
-```
-
-To run on Android device while developing:
-
-```bash
-npx expo start --android
-```
-
-## Build APK with EAS
-
-1. Install EAS CLI:
-
-```bash
-npm install -g eas-cli
-```
-
-2. Login:
-
-```bash
-npx expo login
-eas login
-```
-
-3. Configure EAS (one-time):
-
-```bash
-eas build:configure
-```
-
-4. Build APK:
-
-```bash
-eas build --platform android --profile preview
-```
-
-5. Open the build URL, download APK, and transfer it to the phone.
-
-## Manual APK Install on Android
-
-1. On the phone, enable installing from unknown sources for the file manager/browser used.
-2. Tap the downloaded APK file.
-3. Complete installation and open the app.
+The former Expo/Android source is maintained separately in the `monthly-apartment-bill-expo-legacy` repository.

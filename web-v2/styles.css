@@ -1,0 +1,61 @@
+/* Additional custom styles for Material Design 3 UI */
+/* These complement the Tailwind CSS classes */
+
+/* Base reset for better form controls */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Remove number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Date input styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Better select dropdown arrow hiding for custom styling */
+select {
+  background-image: none;
+}
+
+/* Focus visible for accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #0050b5;
+  outline-offset: 2px;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Mobile viewport fix */
+@supports (padding: max(0px)) {
+  main {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}

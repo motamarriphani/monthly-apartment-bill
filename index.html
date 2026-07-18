@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Monthly Apartment Bill</title>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f7f9ff; color: #161c22; font: 16px/1.5 system-ui, sans-serif; }
+      main { width: min(680px, calc(100% - 40px)); text-align: center; }
+      h1 { margin-bottom: 8px; } p { color: #424753; }
+      nav { display: grid; gap: 16px; margin-top: 32px; }
+      a { display: block; padding: 20px; border-radius: 16px; background: white; color: #0050b5; font-weight: 700; text-decoration: none; box-shadow: 0 2px 12px #0f172a18; }
+      a:hover, a:focus-visible { outline: 3px solid #0050b5; outline-offset: 3px; }
+      small { display: block; margin-top: 5px; color: #424753; font-weight: 400; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Monthly Apartment Bill</h1>
+      <p>Choose the calculator version you want to use.</p>
+      <nav>
+        <a href="./web-v1/"><span>Web version 1</span><small>Legacy Expo web snapshot</small></a>
+        <a href="./web-v2/"><span>Web version 2</span><small>Current standalone web app</small></a>
+      </nav>
+    </main>
+  </body>
+</html>

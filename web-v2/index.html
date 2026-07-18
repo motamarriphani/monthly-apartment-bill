@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Monthly Water Bill</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'surface': '#f7f9ff',
+            'on-surface': '#161c22',
+            'on-surface-variant': '#424753',
+            'surface-container-low': '#eff4fc',
+            'surface-container-lowest': '#ffffff',
+            'surface-container': '#e9eef6',
+            'surface-container-high': '#e3e8f0',
+            'surface-container-highest': '#dee3eb',
+            'primary': '#0050b5',
+            'on-primary': '#ffffff',
+            'primary-container': '#2c69d3',
+            'on-primary-container': '#edf0ff',
+            'secondary': '#256865',
+            'on-secondary': '#ffffff',
+            'secondary-container': '#abece7',
+            'on-secondary-container': '#2b6c69',
+            'outline': '#737784',
+            'outline-variant': '#c2c6d5',
+            'error': '#ba1a1a',
+            'on-error': '#ffffff',
+            'tertiary': '#ac0828',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          borderRadius: {
+            '2xl': '1rem',
+            '3xl': '1.5rem',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0, 80, 181, 0.2);
+    }
+    
+    /* Custom Toggle Switch */
+    .toggle-checkbox:checked + .toggle-bg {
+      background-color: #0050b5;
+    }
+    .toggle-checkbox:checked + .toggle-bg .toggle-dot {
+      transform: translateX(1.25rem);
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    
+    /* Animation for cards */
+    .hover-lift {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Flat card styles */
+    .flat-card {
+      transition: all 0.2s ease;
+    }
+    .flat-card.inactive {
+      opacity: 0.6;
+      background-color: #f1f5f9;
+    }
+    
+    /* Table styles */
+    .breakdown-table th,
+    .breakdown-table td {
+      padding: 12px 8px;
+    }
+    .breakdown-table th {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #424753;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .breakdown-table td {
+      font-size: 14px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .breakdown-table tr:last-child td {
+      border-bottom: none;
+    }
+    .breakdown-table .striped {
+      background-color: #f8fafc;
+    }
+    .breakdown-table .inactive {
+      opacity: 0.6;
+    }
+    .breakdown-table tfoot td {
+      border-top: 2px solid #0050b5;
+      font-weight: 700;
+      color: #0050b5;
+    }
+    
+    /* Bill preview styles */
+    .bill-preview {
+      font-size: 10px;
+      transform: scale(0.95);
+      transform-origin: top center;
+    }
+    
+    /* Button press effect */
+    .btn-press:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-sans min-h-screen">
+  <main class="py-6 px-4 max-w-5xl mx-auto">
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 class="text-3xl font-extrabold tracking-tight text-on-surface mb-1">Monthly Water Bill</h1>
+      <p class="text-sm text-on-surface-variant font-medium">Apartment Calculator</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Left Column: Inputs -->
+      <div class="space-y-6">
+        <!-- Monthly Inputs Section -->
+        <section class="bg-surface-container-low rounded-3xl p-6 shadow-sm hover-lift">
+          <h2 class="text-sm font-bold tracking-widest text-primary uppercase mb-1">Monthly Inputs</h2>
+          <p class="text-xs text-on-surface-variant mb-5">Enter month and bill values. Totals update automatically.</p>
+          
+          <div class="space-y-4">
+            <!-- Billing Period -->
+            <div class="group">
+              <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Billing period</label>
+              <div class="relative">
+                <select id="billing-period" class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3.5 text-on-surface font-semibold appearance-none cursor-pointer hover:border-primary transition-colors">
+                </select>
+                <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+              </div>
+            </div>
+
+            <!-- Maintained By -->
+            <div class="group">
+              <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Maintained by flat no.</label>
+              <div class="relative">
+                <select id="maintained-by-flat" class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3.5 text-on-surface font-semibold appearance-none cursor-pointer hover:border-primary transition-colors">
+                  <option value="">Select flat</option>
+                </select>
+                <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+              </div>
+            </div>
+
+            <!-- Final Payment Date -->
+            <div class="group">
+              <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Final payment date</label>
+              <input id="final-payment-date" type="date" class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3.5 text-on-surface font-semibold cursor-pointer hover:border-primary transition-colors" />
+            </div>
+
+            <!-- Pay To -->
+            <div class="group">
+              <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Pay to</label>
+              <div class="relative">
+                <select id="pay-to-flat" class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3.5 text-on-surface font-semibold appearance-none cursor-pointer hover:border-primary transition-colors">
+                  <option value="">Select flat</option>
+                </select>
+                <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+              </div>
+            </div>
+
+            <!-- Number of Tankers -->
+            <div class="group">
+              <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Number of tankers</label>
+              <input id="tankers" type="number" inputmode="numeric" placeholder="0" class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3.5 text-on-surface font-semibold placeholder-on-surface-variant/50 hover:border-primary transition-colors" />
+            </div>
+
+            <!-- Price Per Tanker -->
+            <div class="group">
+              <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Price per tanker (Rs)</label>
+              <input id="price-per-tanker" type="number" inputmode="numeric" placeholder="0" class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3.5 text-on-surface font-semibold placeholder-on-surface-variant/50 hover:border-primary transition-colors" />
+            </div>
+
+            <!-- Current Water Bill -->
+            <div class="group">
+              <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Current water bill (optional, Rs)</label>
+              <input id="current-water-bill" type="number" inputmode="numeric" placeholder="0" class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3.5 text-on-surface font-semibold placeholder-on-surface-variant/50 hover:border-primary transition-colors" />
+            </div>
+          </div>
+        </section>
+
+        <!-- Maintenance Section -->
+        <section class="bg-surface-container-low rounded-3xl p-6 shadow-sm hover-lift">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <h2 class="text-sm font-bold tracking-widest text-primary uppercase mb-1">Maintenance</h2>
+              <p class="text-xs text-on-surface-variant">Use one common amount, or switch to per-flat mode.</p>
+            </div>
+          </div>
+
+          <!-- Toggle -->
+          <div class="flex items-center justify-between bg-surface-container-lowest rounded-2xl p-4 mb-4">
+            <span class="text-sm font-semibold text-on-surface">Per-flat maintenance mode</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="maintenance-mode-toggle" type="checkbox" class="sr-only toggle-checkbox" />
+              <div class="w-12 h-6 bg-outline-variant rounded-full transition-colors toggle-bg">
+                <div class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform toggle-dot"></div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Global Maintenance Input -->
+          <div id="global-maintenance-field" class="group">
+            <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Maintenance per flat (Rs)</label>
+            <input id="global-maintenance" type="number" inputmode="numeric" placeholder="0" class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-3.5 text-on-surface font-semibold placeholder-on-surface-variant/50 hover:border-primary transition-colors" />
+          </div>
+
+          <!-- Per-flat Note -->
+          <p id="per-flat-note" class="text-sm text-on-surface-variant hidden">Enter maintenance amount inside each flat row.</p>
+        </section>
+
+        <!-- Flats Section -->
+        <section class="bg-surface-container-low rounded-3xl p-6 shadow-sm hover-lift">
+          <div class="flex justify-between items-end mb-5">
+            <div>
+              <h2 class="text-sm font-bold tracking-widest text-primary uppercase mb-1">Flats</h2>
+              <p class="text-xs text-on-surface-variant">Keep flats active when occupied.</p>
+            </div>
+            <p id="flats-meta" class="text-xs font-bold text-on-surface-variant">Total rows: 9 | Active: 9</p>
+          </div>
+
+          <div id="flats-list" class="space-y-3">
+            <!-- Flat cards will be rendered here -->
+          </div>
+
+          <button id="restore-flats" class="w-full mt-5 py-4 bg-primary text-on-primary font-bold rounded-xl shadow-lg shadow-primary/25 btn-press transition-all hover:bg-primary-container">
+            Restore Default Flats
+          </button>
+        </section>
+      </div>
+
+      <!-- Right Column: Results -->
+      <div class="space-y-6">
+        <!-- Summary Section -->
+        <section class="bg-surface-container-low rounded-3xl p-6 shadow-sm hover-lift">
+          <h2 class="text-sm font-bold tracking-widest text-primary uppercase mb-4">Summary</h2>
+          <div id="summary-lines" class="bg-surface-container-lowest rounded-2xl p-4 space-y-3 text-sm font-medium">
+            <!-- Summary lines will be rendered here -->
+          </div>
+        </section>
+
+        <!-- Breakdown Section -->
+        <section class="bg-surface-container-low rounded-3xl p-6 shadow-sm hover-lift overflow-hidden">
+          <h2 class="text-sm font-bold tracking-widest text-primary uppercase mb-1">Flat-wise Breakdown</h2>
+          <p class="text-xs text-on-surface-variant mb-4">Water and maintenance amount per flat.</p>
+          
+          <div class="overflow-x-auto">
+            <div id="breakdown-table" class="breakdown-table">
+              <!-- Table will be rendered here -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Download Section -->
+        <section class="bg-surface-container-low rounded-3xl p-6 shadow-sm hover-lift">
+          <h2 class="text-sm font-bold tracking-widest text-primary uppercase mb-1">Download Bill Image</h2>
+          <p class="text-xs text-on-surface-variant mb-4">Generate a PNG image for sharing in WhatsApp.</p>
+          
+          <!-- Bill Preview -->
+          <div class="bg-white border border-outline-variant rounded-2xl p-4 mb-4 shadow-inner overflow-hidden">
+            <div id="bill-template-preview" class="bill-preview">
+              <!-- Bill preview will be rendered here -->
+            </div>
+          </div>
+
+          <button id="download-image" class="w-full py-4 bg-primary text-on-primary font-bold rounded-xl shadow-lg shadow-primary/25 btn-press transition-all hover:bg-primary-container flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined">download</span>
+            Download Image
+          </button>
+        </section>
+
+        <!-- Reset Button -->
+        <button id="reset-month" class="w-full py-4 bg-error text-on-error font-bold rounded-2xl shadow-lg shadow-error/25 btn-press transition-all hover:opacity-90 flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined">restart_alt</span>
+          Reset Month
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
