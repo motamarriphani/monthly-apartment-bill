@@ -77,7 +77,7 @@ function updateFlatField(id, key, value) {
       flat.id === id ? { ...flat, [key]: value } : flat
     )
   };
-  persistAndRender();
+  persistAndRender({ skipFlats: true });
 }
 
 function toggleFlat(id, isActive) {
@@ -103,9 +103,9 @@ function resetMonth() {
   persistAndRender();
 }
 
-function persistAndRender() {
+function persistAndRender(options = {}) {
   saveState();
-  render();
+  render(options);
 }
 
 function hydrateSelect(select, options, emptyLabel = "Select flat") {
@@ -233,7 +233,7 @@ function renderFlats(values, computed) {
     .join("");
 }
 
-function render() {
+function render({ skipFlats = false } = {}) {
   const { values } = state;
   const computed = computeBill(values);
   const templateData = buildTemplateData(values, computed);
@@ -252,7 +252,9 @@ function render() {
 
   renderSummary(values, computed);
   renderBreakdown(computed);
-  renderFlats(values, computed);
+  if (!skipFlats) {
+    renderFlats(values, computed);
+  }
   elements.billTemplatePreview.innerHTML = renderBillTemplate(templateData);
 }
 
