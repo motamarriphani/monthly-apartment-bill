@@ -1,4 +1,4 @@
-# Monthly Apartment Bill — Web Editions
+# Monthly Apartment Bill â€” Web Editions
 
 This repository contains two browser versions of the Monthly Apartment Bill calculator.
 
@@ -11,4 +11,4 @@ Open `index.html` locally to choose a version, or publish the repository with Gi
 
 Web version 1 is a legacy snapshot and needs no build step. Web version 2 is also static: serve the repository with any static web server and open `web-v2/`.
 
-The former Expo/Android source is maintained separately in the `monthly-apartment-bill-expo-legacy` repository.
+The former Expo/Android source is maintained separately in the [monthly-apartment-bill-expo-legacy](https://github.com/motamarriphani/monthly-apartment-bill-expo-legacy) repository.
