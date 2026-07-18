@@ -116,13 +116,23 @@ export const parseDateInputValue = (value) => {
   if (
     !Number.isInteger(year) ||
     !Number.isInteger(month) ||
-    !Number.isInteger(day)
+    !Number.isInteger(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1
   ) {
     return "";
   }
 
   const date = new Date(year, month - 1, day);
-  if (Number.isNaN(date.getTime())) return "";
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return "";
+  }
   return formatDateLabel(date);
 };
 
@@ -140,12 +150,19 @@ export const formatDateInputValue = (label) => {
   );
   const year = Number(match[3]);
 
-  if (monthIndex === -1 || !Number.isInteger(day) || !Number.isInteger(year)) {
+  if (monthIndex === -1 || !Number.isInteger(day) || !Number.isInteger(year) || day < 1) {
     return "";
   }
 
   const date = new Date(year, monthIndex, day);
-  if (Number.isNaN(date.getTime())) return "";
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== monthIndex ||
+    date.getDate() !== day
+  ) {
+    return "";
+  }
 
   return [
     String(date.getFullYear()).padStart(4, "0"),
@@ -240,7 +257,11 @@ export const computeBill = (form) => {
 
   const perFlat = form.flats.map((flat) => {
     const minutesNum = toNumber(flat.minutes);
-    const waterAmount = flat.isActive ? minutesNum * perMinuteCost : 0;
+    // Each active flat's water share is rounded up. The small difference is
+    // explicitly collected as a maintenance-fund rounding surplus.
+    const waterAmount = flat.isActive && totalMinutes > 0
+      ? Math.ceil(minutesNum * perMinuteCost)
+      : 0;
     const maintenanceAmount = flat.isActive
       ? form.maintenanceMode === "perFlat"
         ? toNumber(flat.maintenance)
@@ -259,6 +280,13 @@ export const computeBill = (form) => {
     };
   });
 
+  const totalWaterCollected = perFlat.reduce(
+    (sum, row) => sum + row.waterAmount,
+    0
+  );
+  const waterRoundingSurplus = totalMinutes > 0
+    ? totalWaterCollected - totalWaterCost
+    : 0;
   const totalMaintenance = perFlat.reduce(
     (sum, row) => sum + row.maintenanceAmount,
     0
@@ -268,6 +296,8 @@ export const computeBill = (form) => {
 
   return {
     totalWaterCost,
+    totalWaterCollected,
+    waterRoundingSurplus,
     totalMinutes,
     perMinuteCost,
     activeFlatsCount,
@@ -287,6 +317,8 @@ export const buildTemplateData = (form, computed) => ({
   pricePerTanker: toNumber(form.pricePerTanker),
   currentWaterBill: roundRupee(toNumber(form.currentWaterBill)),
   totalWaterCost: roundRupee(computed.totalWaterCost),
+  totalWaterCollected: roundRupee(computed.totalWaterCollected),
+  waterRoundingSurplus: roundRupee(computed.waterRoundingSurplus),
   totalMinutes: computed.totalMinutes,
   perMinuteCost: formatPerMinute(computed.perMinuteCost),
   activeFlatsCount: computed.activeFlatsCount,

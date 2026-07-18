@@ -18,7 +18,8 @@ export const renderBillTemplate = (data) => `
           <p>Tankers: ${escapeHtml(data.tankerCount)}</p>
           <p>Price/Tanker: Rs ${escapeHtml(data.pricePerTanker)}</p>
           <p>Current Bill: Rs ${escapeHtml(data.currentWaterBill)}</p>
-          <p class="font-semibold text-on-surface">Total: Rs ${escapeHtml(data.totalWaterCost)}</p>
+          <p>Actual water bill: Rs ${escapeHtml(data.totalWaterCost)}</p>
+          <p class="font-semibold text-on-surface">Water collected: Rs ${escapeHtml(data.totalWaterCollected)}</p>
         </div>
       </div>
       <div class="bg-surface-container-low rounded-lg p-3">
@@ -28,6 +29,7 @@ export const renderBillTemplate = (data) => `
           <p>Per Minute: Rs ${escapeHtml(data.perMinuteCost)}</p>
           <p>Active Flats: ${escapeHtml(data.activeFlatsCount)}</p>
           <p>Maintained By: Flat ${escapeHtml(data.maintainedByFlat)}</p>
+          <p>Rounding to maintenance: Rs ${escapeHtml(data.waterRoundingSurplus)}</p>
         </div>
       </div>
     </div>
@@ -79,7 +81,7 @@ export const renderBillTemplate = (data) => `
 export const downloadBillImage = (data) => {
   const rowCount = data.rows.length;
   const width = 1240;
-  const topAreaHeight = 360;
+  const topAreaHeight = 408;
   const rowHeight = 44;
   const footerHeight = 190;
   const height = topAreaHeight + rowCount * rowHeight + footerHeight;
@@ -107,7 +109,7 @@ export const downloadBillImage = (data) => {
   ctx.fillText(`Month: ${data.monthLabel}`, left, 96);
 
   const boxTop = 122;
-  const boxHeight = 182;
+  const boxHeight = 218;
   const boxGap = 24;
   const boxWidth = (contentWidth - boxGap) / 2;
 
@@ -131,14 +133,16 @@ export const downloadBillImage = (data) => {
     `Tankers: ${data.tankerCount}`,
     `Price/Tanker: Rs ${data.pricePerTanker}`,
     `Current Bill: Rs ${data.currentWaterBill}`,
-    `Total Water Cost: Rs ${data.totalWaterCost}`
+    `Actual Water Bill: Rs ${data.totalWaterCost}`,
+    `Water Collected: Rs ${data.totalWaterCollected}`
   ]);
 
   drawBox(left + boxWidth + boxGap, "Usage Summary", [
     `Total Minutes: ${data.totalMinutes}`,
     `Per Minute: Rs ${data.perMinuteCost}`,
     `Active Flats: ${data.activeFlatsCount}`,
-    `Maintained By: Flat ${data.maintainedByFlat}`
+    `Maintained By: Flat ${data.maintainedByFlat}`,
+    `Rounding to Maintenance: Rs ${data.waterRoundingSurplus}`
   ]);
 
   const yStart = boxTop + boxHeight + 46;
@@ -180,7 +184,7 @@ export const downloadBillImage = (data) => {
   ctx.font = "700 22px Arial";
   ctx.fillText("Grand Total", xFlat, y + 6);
   ctx.fillText(String(data.totalMinutes), xMin, y + 6);
-  ctx.fillText(String(data.totalWaterCost), xWater, y + 6);
+  ctx.fillText(String(data.totalWaterCollected), xWater, y + 6);
   ctx.fillText(String(data.totalMaintenance), xMaint, y + 6);
   ctx.fillText(String(data.grandTotal), xTotal, y + 6);
 

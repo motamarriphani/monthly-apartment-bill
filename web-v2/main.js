@@ -40,8 +40,50 @@ const elements = {
   billTemplatePreview: document.querySelector("#bill-template-preview"),
   resetMonth: document.querySelector("#reset-month"),
   restoreFlats: document.querySelector("#restore-flats"),
-  downloadImage: document.querySelector("#download-image")
+  downloadImage: document.querySelector("#download-image"),
+  validationMessage: document.querySelector("#validation-message")
 };
+
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const isNonNegativeNumber = (value) => {
+  if (typeof value !== "string" || !value.trim()) return true;
+  const number = Number(value.replace(/,/g, "").trim());
+  return Number.isFinite(number) && number >= 0;
+};
+
+function getValidationErrors(values, computed) {
+  const errors = [];
+  const numericFields = [
+    ["number of tankers", values.tankers],
+    ["price per tanker", values.pricePerTanker],
+    ["current water bill", values.currentWaterBill]
+  ];
+
+  if (values.maintenanceMode === "perFlat") {
+    values.flats.forEach((flat) => numericFields.push([`maintenance for flat ${flat.flatNumber}`, flat.maintenance]));
+  } else {
+    numericFields.push(["maintenance", values.globalMaintenance]);
+  }
+  values.flats.forEach((flat) => numericFields.push([`minutes for flat ${flat.flatNumber}`, flat.minutes]));
+
+  if (numericFields.some(([, value]) => !isNonNegativeNumber(value))) {
+    errors.push("Enter only non-negative numbers.");
+  }
+  if (!values.maintainedByFlat || !values.finalPaymentDate || !values.payTo) {
+    errors.push("Choose the maintained-by flat, final payment date, and pay-to flat before downloading.");
+  }
+  if (computed.totalWaterCost > 0 && computed.totalMinutes <= 0) {
+    errors.push("Enter minutes for at least one active flat to distribute the water bill.");
+  }
+  return errors;
+}
 
 function loadState() {
   try {
@@ -54,7 +96,11 @@ function loadState() {
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.values));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.values));
+  } catch (error) {
+    // Rendering should still work if browser storage is unavailable.
+  }
 }
 
 function setField(key, value) {
@@ -91,6 +137,9 @@ function toggleFlat(id, isActive) {
 }
 
 function restoreFlats() {
+  if (!window.confirm("Restore the default flats? This clears all entered minutes, maintenance values, and active/inactive selections.")) {
+    return;
+  }
   state.values = {
     ...state.values,
     flats: createDefaultFlats()
@@ -99,6 +148,9 @@ function restoreFlats() {
 }
 
 function resetMonth() {
+  if (!window.confirm("Reset this month? This clears every bill field and flat value.")) {
+    return;
+  }
   state.values = createInitialFormState();
   persistAndRender();
 }
@@ -126,13 +178,15 @@ function hydrateSelect(select, options, emptyLabel = "Select flat") {
 function renderSummary(values, computed) {
   const period = formatBillingPeriod(values.monthLabel, values.billYear);
   elements.summaryLines.innerHTML = [
-    `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Month:</span> <span class="font-bold text-on-surface">${period}</span></div>`,
+    `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Month:</span> <span class="font-bold text-on-surface">${escapeHtml(period)}</span></div>`,
     `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Total Water Cost:</span> <span class="font-bold text-on-surface">Rs ${roundRupee(computed.totalWaterCost)}</span></div>`,
+    `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Water Collected:</span> <span class="font-bold text-on-surface">Rs ${roundRupee(computed.totalWaterCollected)}</span></div>`,
+    `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Rounding to Maintenance:</span> <span class="font-bold text-on-surface">Rs ${roundRupee(computed.waterRoundingSurplus)}</span></div>`,
     `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Total Minutes:</span> <span class="font-bold text-on-surface">${computed.totalMinutes}</span></div>`,
     `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Per Minute Cost:</span> <span class="font-bold text-on-surface">Rs ${formatPerMinute(computed.perMinuteCost)}</span></div>`,
-    `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Maintained By:</span> <span class="font-bold text-on-surface">Flat ${values.maintainedByFlat.trim() || "-"}</span></div>`,
-    `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Final Payment Date:</span> <span class="font-bold text-on-surface">${values.finalPaymentDate.trim() || "-"}</span></div>`,
-    `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Pay To:</span> <span class="font-bold text-on-surface">${values.payTo.trim() || "-"}</span></div>`
+    `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Maintained By:</span> <span class="font-bold text-on-surface">Flat ${escapeHtml(values.maintainedByFlat.trim() || "-")}</span></div>`,
+    `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Final Payment Date:</span> <span class="font-bold text-on-surface">${escapeHtml(values.finalPaymentDate.trim() || "-")}</span></div>`,
+    `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Pay To:</span> <span class="font-bold text-on-surface">${escapeHtml(values.payTo.trim() || "-")}</span></div>`
   ].join("");
 }
 
@@ -153,7 +207,7 @@ function renderBreakdown(computed) {
           .map(
             (row, index) => `
               <tr class="${index % 2 === 1 ? "striped" : ""} ${row.isActive ? "" : "inactive"}">
-                <td class="font-medium">${row.flatNumber}${row.isActive ? "" : " <span class=\"text-xs text-on-surface-variant\">(off)</span>"}</td>
+                <td class="font-medium">${escapeHtml(row.flatNumber)}${row.isActive ? "" : " <span class=\"text-xs text-on-surface-variant\">(off)</span>"}</td>
                 <td class="text-right">${row.minutes}</td>
                 <td class="text-right">${roundRupee(row.waterAmount)}</td>
                 <td class="text-right">${roundRupee(row.maintenanceAmount)}</td>
@@ -167,7 +221,7 @@ function renderBreakdown(computed) {
         <tr>
           <td class="uppercase tracking-wider">Total</td>
           <td class="text-right">${computed.totalMinutes}</td>
-          <td class="text-right">${roundRupee(computed.totalWaterCost)}</td>
+          <td class="text-right">${roundRupee(computed.totalWaterCollected)}</td>
           <td class="text-right">${roundRupee(computed.totalMaintenance)}</td>
           <td class="text-right">${roundRupee(computed.grandTotal)}</td>
         </tr>
@@ -181,14 +235,14 @@ function renderFlats(values, computed) {
 
   elements.flatsList.innerHTML = values.flats
     .map(
-      (flat) => `
+      (flat, index) => `
         <article class="flat-card ${flat.isActive ? '' : 'inactive'} bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/30" data-flat-id="${flat.id}">
           <div class="flex justify-between items-center mb-3">
-            <h3 class="font-bold text-on-surface text-lg">Flat ${flat.flatNumber}</h3>
+            <h3 class="font-bold text-on-surface text-lg">Flat ${escapeHtml(flat.flatNumber)}</h3>
             <div class="flex items-center gap-2">
               <span class="text-xs font-bold text-on-surface-variant uppercase">${flat.isActive ? 'Active' : 'Inactive'}</span>
-              <label class="relative inline-flex items-center cursor-pointer scale-90">
-                <input type="checkbox" data-role="active-toggle" ${flat.isActive ? 'checked' : ''} class="sr-only toggle-checkbox" />
+              <label class="relative inline-flex items-center cursor-pointer scale-90" for="flat-${index}-active">
+                <input id="flat-${index}-active" type="checkbox" data-role="active-toggle" aria-label="Set Flat ${escapeHtml(flat.flatNumber)} active" ${flat.isActive ? 'checked' : ''} class="sr-only toggle-checkbox" />
                 <div class="w-10 h-5 bg-outline-variant rounded-full transition-colors toggle-bg">
                   <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform toggle-dot"></div>
                 </div>
@@ -198,11 +252,15 @@ function renderFlats(values, computed) {
 
           <div class="space-y-3">
             <div>
-              <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Minutes used</label>
+              <label for="flat-${index}-minutes" class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Minutes used</label>
               <input
+                id="flat-${index}-minutes"
+                type="number"
+                min="0"
+                step="1"
                 class="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-3 py-2.5 text-on-surface font-semibold text-sm focus:ring-2 focus:ring-primary/20 ${flat.isActive ? '' : 'opacity-50 cursor-not-allowed'}"
                 data-role="minutes"
-                value="${flat.minutes}"
+                value="${escapeHtml(flat.minutes)}"
                 inputmode="numeric"
                 placeholder="0"
                 ${flat.isActive ? '' : 'disabled'}
@@ -213,11 +271,15 @@ function renderFlats(values, computed) {
               values.maintenanceMode === "perFlat"
                 ? `
                   <div>
-                    <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Maintenance (Rs)</label>
+                    <label for="flat-${index}-maintenance" class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">Maintenance (Rs)</label>
                     <input
+                      id="flat-${index}-maintenance"
+                      type="number"
+                      min="0"
+                      step="1"
                       class="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-3 py-2.5 text-on-surface font-semibold text-sm focus:ring-2 focus:ring-primary/20 ${flat.isActive ? '' : 'opacity-50 cursor-not-allowed'}"
                       data-role="maintenance"
-                      value="${flat.maintenance}"
+                      value="${escapeHtml(flat.maintenance)}"
                       inputmode="numeric"
                       placeholder="0"
                       ${flat.isActive ? '' : 'disabled'}
@@ -237,6 +299,7 @@ function render({ skipFlats = false } = {}) {
   const { values } = state;
   const computed = computeBill(values);
   const templateData = buildTemplateData(values, computed);
+  const validationErrors = getValidationErrors(values, computed);
 
   elements.billingPeriod.value = formatBillingPeriod(values.monthLabel, values.billYear);
   elements.finalPaymentDate.value = formatDateInputValue(values.finalPaymentDate);
@@ -249,6 +312,12 @@ function render({ skipFlats = false } = {}) {
   elements.globalMaintenance.value = values.globalMaintenance;
   elements.globalMaintenanceField.hidden = values.maintenanceMode !== "global";
   elements.perFlatNote.hidden = values.maintenanceMode !== "perFlat";
+  elements.validationMessage.textContent = validationErrors[0] || "";
+  elements.validationMessage.classList.toggle("text-error", validationErrors.length > 0);
+  elements.validationMessage.classList.remove("text-secondary");
+  elements.downloadImage.disabled = validationErrors.length > 0;
+  elements.downloadImage.classList.toggle("opacity-50", validationErrors.length > 0);
+  elements.downloadImage.classList.toggle("cursor-not-allowed", validationErrors.length > 0);
 
   renderSummary(values, computed);
   renderBreakdown(computed);
@@ -320,8 +389,22 @@ function bindEvents() {
   elements.restoreFlats.addEventListener("click", restoreFlats);
   elements.downloadImage.addEventListener("click", () => {
     const computed = computeBill(state.values);
+    const validationErrors = getValidationErrors(state.values, computed);
+    if (validationErrors.length > 0) {
+      elements.validationMessage.textContent = validationErrors[0];
+      return;
+    }
     const templateData = buildTemplateData(state.values, computed);
-    downloadBillImage(templateData);
+    try {
+      downloadBillImage(templateData);
+      elements.validationMessage.textContent = "Bill image downloaded.";
+      elements.validationMessage.classList.remove("text-error");
+      elements.validationMessage.classList.add("text-secondary");
+    } catch (error) {
+      elements.validationMessage.textContent = "Could not generate the bill image. Please try again.";
+      elements.validationMessage.classList.remove("text-secondary");
+      elements.validationMessage.classList.add("text-error");
+    }
   });
 }
 
