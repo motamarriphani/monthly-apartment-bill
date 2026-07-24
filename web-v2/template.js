@@ -29,7 +29,7 @@ export const renderBillTemplate = (data) => `
           <p>Per Minute: Rs ${escapeHtml(data.perMinuteCost)}</p>
           <p>Active Flats: ${escapeHtml(data.activeFlatsCount)}</p>
           <p>Maintained By: Flat ${escapeHtml(data.maintainedByFlat)}</p>
-          <p>Rounding to maintenance: Rs ${escapeHtml(data.waterRoundingSurplus)}</p>
+          <p>Maintenance collected: Rs ${escapeHtml(data.totalMaintenanceCollected)}</p>
         </div>
       </div>
     </div>
@@ -63,7 +63,7 @@ export const renderBillTemplate = (data) => `
         <tr class="bg-primary/10 border-t-2 border-primary">
           <td class="py-2 px-1 font-bold text-primary">Grand Total</td>
           <td class="py-2 px-1 text-center font-bold text-primary">${escapeHtml(data.totalMinutes)}</td>
-          <td class="py-2 px-1 text-center font-bold text-primary">${escapeHtml(data.totalWaterCost)}</td>
+          <td class="py-2 px-1 text-center font-bold text-primary">${escapeHtml(data.totalWaterCollected)}</td>
           <td class="py-2 px-1 text-center font-bold text-primary">${escapeHtml(data.totalMaintenance)}</td>
           <td class="py-2 px-1 text-right font-bold text-primary">${escapeHtml(data.grandTotal)}</td>
         </tr>
@@ -142,7 +142,7 @@ export const downloadBillImage = (data) => {
     `Per Minute: Rs ${data.perMinuteCost}`,
     `Active Flats: ${data.activeFlatsCount}`,
     `Maintained By: Flat ${data.maintainedByFlat}`,
-    `Rounding to Maintenance: Rs ${data.waterRoundingSurplus}`
+    `Maintenance Collected: Rs ${data.totalMaintenanceCollected}`
   ]);
 
   const yStart = boxTop + boxHeight + 46;

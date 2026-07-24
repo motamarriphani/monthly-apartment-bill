@@ -294,6 +294,7 @@ export const computeBill = (form) => {
     (sum, row) => sum + row.maintenanceAmount,
     0
   );
+  const totalMaintenanceCollected = totalMaintenance + waterRoundingSurplus;
   const grandTotal = perFlat.reduce((sum, row) => sum + row.total, 0);
   const activeRows = perFlat.filter((row) => row.isActive);
 
@@ -305,6 +306,7 @@ export const computeBill = (form) => {
     perMinuteCost,
     activeFlatsCount,
     totalMaintenance,
+    totalMaintenanceCollected,
     grandTotal,
     perFlat,
     activeRows
@@ -326,6 +328,7 @@ export const buildTemplateData = (form, computed) => ({
   perMinuteCost: formatPerMinute(computed.perMinuteCost),
   activeFlatsCount: computed.activeFlatsCount,
   totalMaintenance: roundRupee(computed.totalMaintenance),
+  totalMaintenanceCollected: roundRupee(computed.totalMaintenanceCollected),
   grandTotal: roundRupee(computed.grandTotal),
   rows: computed.activeRows.map((row) => ({
     id: row.id,

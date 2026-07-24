@@ -181,7 +181,7 @@ function renderSummary(values, computed) {
     `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Month:</span> <span class="font-bold text-on-surface">${escapeHtml(period)}</span></div>`,
     `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Total Water Cost:</span> <span class="font-bold text-on-surface">Rs ${roundRupee(computed.totalWaterCost)}</span></div>`,
     `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Water Collected:</span> <span class="font-bold text-on-surface">Rs ${roundRupee(computed.totalWaterCollected)}</span></div>`,
-    `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Rounding to Maintenance:</span> <span class="font-bold text-on-surface">Rs ${roundRupee(computed.waterRoundingSurplus)}</span></div>`,
+    `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Maintenance Collected:</span> <span class="font-bold text-on-surface">Rs ${roundRupee(computed.totalMaintenanceCollected)}</span></div>`,
     `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Total Minutes:</span> <span class="font-bold text-on-surface">${computed.totalMinutes}</span></div>`,
     `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Per Minute Cost:</span> <span class="font-bold text-on-surface">Rs ${formatPerMinute(computed.perMinuteCost)}</span></div>`,
     `<div class="flex justify-between items-center"><span class="text-on-surface-variant">Maintained By:</span> <span class="font-bold text-on-surface">Flat ${escapeHtml(values.maintainedByFlat.trim() || "-")}</span></div>`,
