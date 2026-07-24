@@ -27,17 +27,20 @@ export const MONTH_OPTIONS = [
   "December"
 ];
 
-export const YEAR_OPTIONS = Array.from({ length: 9 }, (_, index) =>
-  String(new Date().getFullYear() - 2 + index)
-);
+export const BILLING_PERIOD_OPTIONS = Array.from({ length: 7 }, (_, index) => {
+  const date = new Date();
+  date.setDate(1);
+  date.setMonth(date.getMonth() + index - 3);
 
-export const BILLING_PERIOD_OPTIONS = YEAR_OPTIONS.flatMap((year) =>
-  MONTH_OPTIONS.map((monthLabel) => ({
-    label: `${monthLabel} ${year}`,
+  const monthLabel = MONTH_OPTIONS[date.getMonth()];
+  const billYear = String(date.getFullYear());
+
+  return {
+    label: `${monthLabel} ${billYear}`,
     monthLabel,
-    billYear: year
-  }))
-);
+    billYear
+  };
+});
 
 export const createFlat = (flatNumber) => ({
   id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
