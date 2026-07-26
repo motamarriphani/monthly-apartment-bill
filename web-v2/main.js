@@ -13,7 +13,7 @@ import {
   parseDateInputValue,
   roundRupee
 } from "../shared/bill-core.js";
-import { downloadBillImage, renderBillTemplate } from "./template.js";
+import { downloadBillImage, downloadBillPdf, renderBillTemplate } from "./template.js";
 
 const STORAGE_KEY = "water_bill_web_v2";
 
@@ -41,6 +41,7 @@ const elements = {
   resetMonth: document.querySelector("#reset-month"),
   restoreFlats: document.querySelector("#restore-flats"),
   downloadImage: document.querySelector("#download-image"),
+  downloadPdf: document.querySelector("#download-pdf"),
   validationMessage: document.querySelector("#validation-message")
 };
 
@@ -316,8 +317,11 @@ function render({ skipFlats = false } = {}) {
   elements.validationMessage.classList.toggle("text-error", validationErrors.length > 0);
   elements.validationMessage.classList.remove("text-secondary");
   elements.downloadImage.disabled = validationErrors.length > 0;
+  elements.downloadPdf.disabled = validationErrors.length > 0;
   elements.downloadImage.classList.toggle("opacity-50", validationErrors.length > 0);
   elements.downloadImage.classList.toggle("cursor-not-allowed", validationErrors.length > 0);
+  elements.downloadPdf.classList.toggle("opacity-50", validationErrors.length > 0);
+  elements.downloadPdf.classList.toggle("cursor-not-allowed", validationErrors.length > 0);
 
   renderSummary(values, computed);
   renderBreakdown(computed);
@@ -387,7 +391,7 @@ function bindEvents() {
 
   elements.resetMonth.addEventListener("click", resetMonth);
   elements.restoreFlats.addEventListener("click", restoreFlats);
-  elements.downloadImage.addEventListener("click", () => {
+  const downloadBill = (format) => {
     const computed = computeBill(state.values);
     const validationErrors = getValidationErrors(state.values, computed);
     if (validationErrors.length > 0) {
@@ -396,8 +400,12 @@ function bindEvents() {
     }
     const templateData = buildTemplateData(state.values, computed);
     try {
-      downloadBillImage(templateData);
-      elements.validationMessage.textContent = "Bill image downloaded.";
+      if (format === "pdf") {
+        downloadBillPdf(templateData);
+      } else {
+        downloadBillImage(templateData);
+      }
+      elements.validationMessage.textContent = `Bill ${format.toUpperCase()} downloaded.`;
       elements.validationMessage.classList.remove("text-error");
       elements.validationMessage.classList.add("text-secondary");
     } catch (error) {
@@ -405,7 +413,10 @@ function bindEvents() {
       elements.validationMessage.classList.remove("text-secondary");
       elements.validationMessage.classList.add("text-error");
     }
-  });
+  };
+
+  elements.downloadImage.addEventListener("click", () => downloadBill("png"));
+  elements.downloadPdf.addEventListener("click", () => downloadBill("pdf"));
 }
 
 function seedStaticOptions() {

@@ -78,7 +78,7 @@ export const renderBillTemplate = (data) => `
   </article>
 `;
 
-export const downloadBillImage = (data) => {
+const createBillCanvas = (data) => {
   const rowCount = data.rows.length;
   const width = 1240;
   const topAreaHeight = 408;
@@ -90,9 +90,7 @@ export const downloadBillImage = (data) => {
   canvas.height = height;
   const ctx = canvas.getContext("2d");
 
-  if (!ctx) {
-    throw new Error("Could not create image.");
-  }
+  if (!ctx) throw new Error("Could not create bill canvas.");
 
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
@@ -194,8 +192,75 @@ export const downloadBillImage = (data) => {
   ctx.fillText(`Pay To: ${data.payTo}`, left + 560, y + 64);
   ctx.fillText("Generated from Monthly Apartment Bill app", left, y + 104);
 
+  return canvas;
+};
+
+export const downloadBillImage = (data) => {
+  const canvas = createBillCanvas(data);
   const link = document.createElement("a");
   link.download = `water-bill-${data.monthLabel.replace(/\s+/g, "-").toLowerCase()}-v2.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
+};
+
+export const downloadBillPdf = (data) => {
+  const canvas = createBillCanvas(data);
+  const jpegData = canvas.toDataURL("image/jpeg", 0.95).split(",")[1];
+  const imageBinary = atob(jpegData);
+  const imageBytes = Uint8Array.from(imageBinary, (character) => character.charCodeAt(0));
+  const encoder = new TextEncoder();
+  // A4 landscape in PDF points (1 point = 1/72 inch), with print-safe margins.
+  const pageWidth = 841.89;
+  const pageHeight = 595.28;
+  const margin = 18;
+  const scale = Math.min(
+    (pageWidth - margin * 2) / canvas.width,
+    (pageHeight - margin * 2) / canvas.height
+  );
+  const imageWidth = canvas.width * scale;
+  const imageHeight = canvas.height * scale;
+  const imageX = (pageWidth - imageWidth) / 2;
+  const imageY = (pageHeight - imageHeight) / 2;
+  const content = `q\n${imageWidth} 0 0 ${imageHeight} ${imageX} ${imageY} cm\n/Im0 Do\nQ\n`;
+  const parts = [];
+  const offsets = [0];
+  let byteLength = 0;
+
+  const addText = (value) => {
+    const bytes = encoder.encode(value);
+    parts.push(bytes);
+    byteLength += bytes.length;
+  };
+  const addBytes = (bytes) => {
+    parts.push(bytes);
+    byteLength += bytes.length;
+  };
+  const addObject = (number, body) => {
+    offsets[number] = byteLength;
+    addText(`${number} 0 obj\n${body}\nendobj\n`);
+  };
+
+  addText("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+  addObject(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  addObject(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+  addObject(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`);
+  offsets[4] = byteLength;
+  addText(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>\nstream\n`);
+  addBytes(imageBytes);
+  addText("\nendstream\nendobj\n");
+  addObject(5, `<< /Length ${encoder.encode(content).length} >>\nstream\n${content}endstream`);
+
+  const xrefOffset = byteLength;
+  addText("xref\n0 6\n0000000000 65535 f \n");
+  for (let index = 1; index <= 5; index += 1) {
+    addText(`${String(offsets[index]).padStart(10, "0")} 00000 n \n`);
+  }
+  addText(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+
+  const url = URL.createObjectURL(new Blob(parts, { type: "application/pdf" }));
+  const link = document.createElement("a");
+  link.download = `water-bill-${data.monthLabel.replace(/\s+/g, "-").toLowerCase()}-v2.pdf`;
+  link.href = url;
+  link.click();
+  URL.revokeObjectURL(url);
 };
